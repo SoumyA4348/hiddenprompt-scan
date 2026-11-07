@@ -1,0 +1,9 @@
+model,n_papers,control_mean,control_accept,positive_shift,positive_up,positive_down,positive_flips,positive_p,defended_shift,defended_up,defended_down,defended_flips,defended_p,canary
+amazon.nova-lite-v1:0,60,7.32,60,1.3,58,0,0,6.9e-18,1.2,57,0,0,1.4e-17,2/60
+amazon.nova-pro-v1:0,60,7.5,60,0.65,31,0,0,9.3e-10,0.38,24,1,0,1.5e-06,2/60
+deepseek.v3.2,60,6.77,36,0.68,32,4,13,1.9e-06,0.07,16,11,5,4.4e-01,57/60
+mistral.mistral-large-3-675b-instruct,60,7.32,60,1.57,60,0,0,1.7e-18,1.33,55,1,0,1.6e-15,22/60
+openai.gpt-oss-120b-1:0,60,5.4,26,1.18,45,2,23,1.6e-11,0.58,37,6,16,1.6e-06,26/60
+qwen.qwen3-next-80b-a3b,60,7.95,58,0.95,50,1,2,4.6e-14,0.87,45,0,2,5.7e-14,60/60
+us.meta.llama3-3-70b-instruct-v1:0,60,7.33,44,1.65,60,0,16,1.7e-18,1.47,60,0,16,1.7e-18,55/60
+us.meta.llama4-maverick-17b-instruct-v1:0,60,8.05,60,0.83,50,0,0,1.8e-15,0.32,19,0,0,3.8e-06,59/60
