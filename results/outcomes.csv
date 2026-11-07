@@ -1,0 +1,19 @@
+measure,value
+match sets (cs papers with a review prompt),43
+control papers,215
+prompt papers published,20
+control papers published,107
+prompt published %,46.5
+control published %,49.8
+published permutation p,0.732
+match sets with citation data,37
+prompt median citations,2
+control median citations,1.0
+prompt above control median,23
+prompt below control median,5
+prompt tied with control median,9
+citations sign-test p,0.001
+works citing prompt papers,187
+of which about peer review or prompt injection,4
+prompt published 95% CI,32.5-61.1
+control published 95% CI,43.1-56.4

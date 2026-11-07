@@ -1,0 +1,5 @@
+pymupdf
+httpx
+boto3
+matplotlib
+pytest
