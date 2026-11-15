@@ -54,12 +54,53 @@ Verdicts:
 If you run LLM-assisted review, the simplest defence is to call `strip` before the model sees the paper.
 In our tests it removed the effect of injected prompts for every model.
 
+## Guardrail for LLM pipelines
+
+`guard` sits in front of the model: it scans the PDF, redacts the hidden text and returns only what a person
+can see. A hidden prompt that redaction can't remove (covered text, switched-off layers) is blocked, and so is
+any file that can't be read.
+
+```
+python hiddenprompt_scan.py --guard paper.pdf | your-llm-command          # visible text only
+python hiddenprompt_scan.py --guard --block paper.pdf                     # refuse any PDF with a hidden prompt (exit 2)
+```
+
+```python
+g = hiddenprompt_scan.guard("paper.pdf")         # or guard(data, on_prompt="block")
+if g["blocked"]:
+    ...                                          # g["verdict"] says why
+else:
+    send_to_model(g["text"])                     # g["pdf"] is the cleaned file
+```
+
+## MCP server
+
+`mcp_server.py` gives the scanner to any MCP client (Claude Code, Claude Desktop, Cursor, VS Code), so an agent
+can check a PDF before it reads it.
+
+```
+pip install pymupdf "mcp>=2"
+claude mcp add hiddenprompt-scan -- python /path/to/mcp_server.py
+```
+
+Other clients take the same command in their MCP config:
+
+```json
+{"mcpServers": {"hiddenprompt-scan": {"command": "python", "args": ["/path/to/mcp_server.py"]}}}
+```
+
+| tool | what it does |
+|---|---|
+| `scan_pdf` | verdict, reasons and the hidden text found |
+| `read_pdf_safely` | the PDF's visible text with hidden text removed, or blocked (`block_prompts=true` refuses any prompt) |
+| `strip_pdf` | writes a cleaned copy; the original is not changed |
+
 ## Validation
 
 - Flags all 18 papers listed in Table 1 of Lin, "Hidden Prompts in Manuscripts Exploit AI-Assisted Peer
   Review" (arXiv:2507.06185).
 - `pytest tests`: 19 synthetic PDFs, one per hiding technique, plus visible look-alikes that must not be
-  flagged.
+  flagged; 5 guardrail cases; and an end-to-end MCP test that starts the server and calls every tool.
 
 ## Census results
 

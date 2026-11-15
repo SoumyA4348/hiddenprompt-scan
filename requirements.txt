@@ -1,4 +1,5 @@
 pymupdf
+mcp>=2
 httpx
 boto3
 matplotlib

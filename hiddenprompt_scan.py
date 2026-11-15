@@ -9,6 +9,7 @@ and text covered by other content.
     python hiddenprompt_scan.py paper.pdf [more.pdf ...]          # one summary per file
     python hiddenprompt_scan.py --json paper.pdf                  # JSON lines
     python hiddenprompt_scan.py --strip paper.pdf clean.pdf       # copy with the hidden text redacted
+    python hiddenprompt_scan.py --guard [--block] paper.pdf       # visible text only; exit 2 if blocked
 """
 from __future__ import annotations
 
@@ -19,7 +20,7 @@ import unicodedata
 
 import pymupdf
 
-__version__ = "0.1.1"   # 0.1.1: a prompt must ask for something, not only address an AI
+__version__ = "0.2.0"   # 0.2.0: guard() and the MCP server; detection unchanged since 0.1.1
 pymupdf.TOOLS.mupdf_display_errors(False)
 
 TINY_PT = 1.0       # glyphs smaller than this cannot be read on screen or paper
@@ -283,8 +284,37 @@ def scan(source) -> dict:
     return out
 
 
+def guard(source, on_prompt: str = "strip") -> dict:
+    """Input guardrail for LLM pipelines: give the model only what a human reader can see.
+
+    Hidden text is redacted; a hidden prompt is blocked when on_prompt="block", or when it
+    survives redaction (covered text, switched-off layers). Unreadable files are blocked.
+    Returns {blocked, verdict, after, intent, text, pdf, report}; text and pdf are None when blocked."""
+    data = source if isinstance(source, (bytes, bytearray)) else open(source, "rb").read()
+    rep = scan(data)
+    out = {"blocked": True, "verdict": rep.get("verdict", rep["status"]), "after": None,
+           "intent": rep.get("intent"), "text": None, "pdf": None, "report": rep}
+    if rep["status"] != "ok" or (on_prompt == "block" and rep["verdict"] == "prompt"):
+        return out
+    clean = data if rep["verdict"] == "clean" else strip(data)
+    out["after"] = scan(clean)["verdict"]
+    if out["after"] == "prompt":
+        return out
+    with pymupdf.open(stream=clean, filetype="pdf") as doc:
+        out["text"] = "\n".join(p.get_text() for p in doc)
+    out.update(blocked=False, pdf=bytes(clean))
+    return out
+
+
 def main(argv):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if argv[:1] == ["--guard"]:
+        g = guard(argv[-1], "block" if "--block" in argv else "strip")
+        if g["blocked"]:
+            print(f"{argv[-1]}: blocked ({g['verdict']})", file=sys.stderr)
+            sys.exit(2)
+        print(g["text"])
+        return
     if argv[:1] == ["--strip"]:
         with open(argv[2], "wb") as f:
             f.write(strip(argv[1]))
