@@ -127,6 +127,37 @@ def test_strip_removes_hidden_prompt_keeps_body():
     assert BODY in text and "IGNORE" not in text
 
 
+def test_guard_passes_clean_pdf_unchanged():
+    data = pdf(lambda d, p: None)
+    g = hiddenprompt_scan.guard(data)
+    assert not g["blocked"] and g["verdict"] == "clean" and g["pdf"] == data
+    assert BODY in g["text"]
+
+
+def test_guard_strips_hidden_prompt():
+    g = hiddenprompt_scan.guard(pdf(lambda d, p: p.insert_text(AT, PROMPT, fontsize=10, color=(1, 1, 1))))
+    assert not g["blocked"] and g["verdict"] == "prompt" and g["after"] == "clean", g["report"]
+    assert BODY in g["text"] and "IGNORE" not in g["text"]
+
+
+def test_guard_block_mode_refuses_prompt():
+    g = hiddenprompt_scan.guard(pdf(lambda d, p: p.insert_text(AT, PROMPT, fontsize=0.1)), "block")
+    assert g["blocked"] and g["text"] is None and g["pdf"] is None
+
+
+def test_guard_blocks_prompt_that_survives_strip():
+    def draw(d, p):
+        p.insert_text(AT, PROMPT, fontsize=10)
+        p.draw_rect(pymupdf.Rect(60, 185, 560, 210), color=None, fill=(1, 1, 1))
+    g = hiddenprompt_scan.guard(pdf(draw))
+    assert g["blocked"] and g["after"] == "prompt" and g["text"] is None
+
+
+def test_guard_blocks_unreadable_file():
+    g = hiddenprompt_scan.guard(b"not a pdf")
+    assert g["blocked"] and g["verdict"] == "unreadable"
+
+
 def test_normalisation():
     assert hiddenprompt_scan.norm("IGN​ORE  ALL\nprevious instruc­tions") == "ignore all previous instructions"
     assert hiddenprompt_scan.lexicon_hits("ignore all previous instruc- tions") == ["ignore_instructions"]
